@@ -389,3 +389,97 @@ Be sure to check out the following Docker documentation resources for more infor
 
 * [Docker inspect reference](https://docs.docker.com/engine/reference/commandline/inspect/#examples)
 * [Docker exec reference](https://docs.docker.com/engine/reference/commandline/exec/)
+
+# Task 5. Publish
+
+Now you're going to push your image to the [Google Artifact Registry](https://cloud.google.com/artifact-registry). After that you'll remove all containers and images to simulate a fresh environment, and then pull and run your containers. This will demonstrate the portability of Docker containers.
+
+To push images to your private registry hosted by Artifact Registry, you need to tag the images with a registry name. The format is `<regional-repository>-docker.pkg.dev/my-project/my-repo/my-image`.
+
+## Create the target Docker repository
+
+You must create a repository before you can push any images to it. Pushing an image can't trigger creation of a repository and the Cloud Build service account does not have permissions to create repositories.
+
+1. From the Navigation Menu, under CI/CD navigate to Artifact Registry > Repositories.
+
+2. Click Create Repository.
+
+3. Specify my-repository as the repository name.
+
+4. Choose Docker as the format.
+
+5. Under Location Type, select Region and then choose the location us-central1 (Iowa).
+
+6. Click Create.
+
+##  Configure authentication
+
+Before you can push or pull images, configure Docker to use the Google Cloud CLI to authenticate requests to Artifact Registry.
+
+1. To set up authentication to Docker repositories in the region us-central1, run the following command in Cloud Shell:
+
+    ```bash
+    gcloud auth configure-docker us-central1-docker.pkg.dev
+    ```
+
+2. Enter `Y` when prompted.
+    The command updates your Docker configuration. You can now connect with Artifact Registry in your Google Cloud project to push and pull images.
+
+## Push the container to Artifact Registry
+
+Run the following commands to set your Project ID and change into the directory with your Dockerfile.
+
+    ```bash
+    export PROJECT_ID=$(gcloud config get-value project)
+    cd ~/test
+    ```
+
+3. Run the command to tag node-app:0.2.
+
+    ```bash
+    docker build -t us-central1-docker.pkg.dev/$PROJECT_ID/my-repository/node-app:0.2 .
+    ```
+
+3. Run the following command to check your built Docker images.
+
+    ```bash
+    docker images
+    ```
+
+    (Command Output)
+
+    ```bash
+    REPOSITORY                      TAG         IMAGE ID          CREATED
+    node-app                        0.2         76b3beef845e      22 hours
+    us-central1-....node-app:0.2    0.2         76b3beef845e      22 hours
+    node-app                        0.1         f166cd2a9f10      26 hours
+    node                            lts         5a767079e3df      7 days
+    hello-world                     latest      1815c82652c0      7 weeks
+    ```
+
+3. Push this image to Artifact Registry.
+
+    ```bash
+    docker push us-central1-docker.pkg.dev/$PROJECT_ID/my-repository/node-app:0.2
+    ```
+
+    Command output (yours may differ):
+
+    ```bash
+    The push refers to a repository [us-central1-docker.pkg.dev/[project-id]/my-repository/node-app:0.2]
+    057029400a4a: Pushed
+    342f14cb7e2b: Pushed
+    903087566d45: Pushed
+    99dac0782a63: Pushed
+    e6695624484e: Pushed
+    da59b99bbd3b: Pushed
+    5616a6292c16: Pushed
+    f3ed6cb59ab0: Pushed
+    654f45ecb7e3: Pushed
+    2c40c66f7667: Pushed
+    0.2: digest: sha256:25b8ebd7820515609517ec38dbca9086e1abef3750c0d2aff7f341407c743c46 size: 2419
+    ```
+
+4. After the build finishes, from the Navigation Menu, under CI/CD navigate to Artifact Registry > Repositories.
+
+5. Click on my-repository. You should see your node-app Docker container created.
