@@ -23,3 +23,28 @@ After a few minutes, the Workbench page lists your instance, followed by Open Ju
 9. Click Open JupyterLab to open JupyterLab in a new tab. If you get a message saying beatrix jupyterlab needs to be included in the build, just ignore it.
 
 **Note**: If Prompted, Click `Build` for Build Recommended pop-up.
+
+# Task 2. Clone the example repo within your Workbench instance
+
+To clone the training-data-analyst repository in your JupyterLab instance:
+
+1. In JupyterLab, click the Terminal icon to open a new terminal.
+2. At the command-line prompt, type the following command and press ENTER:
+
+```bash
+git clone https://github.com/GoogleCloudPlatform/training-data-analyst
+```
+
+3. To confirm that you have cloned the repository, in the left panel, double click the training-data-analyst folder to see its contents.
+
+It will take several minutes for the notebook to clone.
+
+**Note**: If Prompted, Click `Dismiss` for Build Failed pop-up to ignore the message.
+
+## Navigate to the example notebook
+
+1. Navigate to training-data-analyst/self-paced-labs/ai-platform-qwikstart and open ai_platform_qwik_start.ipynb.
+
+2. On the notebook toolbar, navigate to Edit > Clear All Outputs and then Run the cells one by one.
+
+When prompted, come back to these instructions to check your progress.
