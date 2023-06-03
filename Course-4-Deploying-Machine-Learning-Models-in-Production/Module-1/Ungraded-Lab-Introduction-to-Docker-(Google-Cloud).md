@@ -483,3 +483,47 @@ Run the following commands to set your Project ID and change into the directory 
 4. After the build finishes, from the Navigation Menu, under CI/CD navigate to Artifact Registry > Repositories.
 
 5. Click on my-repository. You should see your node-app Docker container created.
+
+# Test the image
+
+You could start a new VM, ssh into that VM, and install gcloud. For simplicity, just remove all containers and images to simulate a fresh environment.
+
+1. Stop and remove all containers:
+
+    ```bash
+    docker stop $(docker ps -q)
+    docker rm $(docker ps -aq)
+    ```
+
+You have to remove the child images (of node:lts) before you remove the node image.
+
+2. Run the following command to remove all of the Docker images.
+
+    ```bash
+    docker rmi us-central1-docker.pkg.dev/$PROJECT_ID/my-repository/node-app:0.2
+    docker rmi node:lts
+    docker rmi -f $(docker images -aq) # remove remaining images
+    docker images
+    ```
+
+    (Command Output)
+
+    ```bash
+    REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+    ```
+
+At this point you should have a pseudo-fresh environment.
+
+3. Pull the image and run it.
+
+    ```bash
+    docker pull us-central1-docker.pkg.dev/$PROJECT_ID/my-repository/node-app:0.2
+    docker run -p 4000:80 -d us-central1-docker.pkg.dev/$PROJECT_ID/my-repository/node-app:0.2
+    curl http://localhost:4000
+    ```
+
+    (Command Output)
+
+    ```bash
+    Welcome to Cloud
+    ```
