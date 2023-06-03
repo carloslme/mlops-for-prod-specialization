@@ -152,3 +152,153 @@ Now you'll write the node application, and after that you'll build the image.
     ```
 
     Notice node is the base image and node-app is the image you built. You can't remove node without removing node-app first. The size of the image is relatively small compared to VMs. Other versions of the node image such as node:slim and node:alpine can give you even smaller images for easier portability. The topic of slimming down container sizes is further explored in Advanced Topics. You can view all versions in the official repository in node.
+
+# Task 3. Run
+
+1. Use this code to run containers based on the image you built:
+
+    ```bash
+    docker run -p 4000:80 --name my-app node-app:0.1
+    ```
+
+    (Command Output)
+
+    ```bash
+    Server running at http://0.0.0.0:80/
+    ```
+
+    The `--name` flag allows you to name the container if you like. The `-p` instructs Docker to map the host's port 4000 to the container's port 80. Now you can reach the server at `http://localhost:4000`. Without port mapping, you would not be able to reach the container at localhost.
+
+2. Open another terminal (in Cloud Shell, click the + icon), and test the server:
+
+    ```bash
+    curl http://localhost:4000
+    ```
+
+    (Command Output)
+
+    ```bash
+    Hello World
+    ```
+
+    The container will run as long as the initial terminal is running. If you want the container to run in the background (not tied to the terminal's session), you need to specify the -d flag.
+
+3. Close the initial terminal and then run the following command to stop and remove the container:
+
+    ```bash
+    docker stop my-app && docker rm my-app
+    ```
+
+4. Now run the following command to start the container in the background:
+
+    ```bash
+    docker run -p 4000:80 --name my-app -d node-app:0.1
+    docker ps
+    ```
+
+    (Command Output)
+
+    ```bash
+    CONTAINER ID   IMAGE          COMMAND        CREATED         ...  NAMES
+    xxxxxxxxxxxx   node-app:0.1   "node app.js"  16 seconds ago  ...  my-app
+    ```
+
+5. Notice the container is running in the output of docker ps. You can look at the logs by executing docker logs [container_id].
+
+    **Note**: You don't have to write the entire container ID, as long as the initial characters uniquely identify the container. For example, you can execute docker logs 17b if the container ID is 17bcaca6f....
+
+    (Command Output)
+
+    ```bash
+    Server running at http://0.0.0.0:80/
+    ```
+
+    Now modify the application.
+
+    In your Cloud Shell, open the test directory you created earlier in the lab:
+
+    ```bash
+    cd test
+    ```
+
+6. Edit app.js with a text editor of your choice (for example nano or vim) and replace "Hello World" with another string:
+
+    ```bash
+    ....
+    const server = http.createServer((req, res) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('Welcome to Cloud\n');
+    });
+    ....
+    ```
+
+7. Build this new image and tag it with 0.2:
+
+    ```bash
+    docker build -t node-app:0.2 .
+    ```
+
+    (Command Output)
+
+    ```bash
+    Step 1/5 : FROM node:lts
+    ---> 67ed1f028e71
+    Step 2/5 : WORKDIR /app
+    ---> Using cache
+    ---> a39c2d73c807
+    Step 3/5 : ADD . /app
+    ---> a7087887091f
+    Removing intermediate container 99bc0526ebb0
+    Step 4/5 : EXPOSE 80
+    ---> Running in 7882a1e84596
+    ---> 80f5220880d9
+    Removing intermediate container 7882a1e84596
+    Step 5/5 : CMD node app.js
+    ---> Running in f2646b475210
+    ---> 5c3edbac6421
+    Removing intermediate container f2646b475210
+    Successfully built 5c3edbac6421
+    Successfully tagged node-app:0.2
+    ```
+
+    Notice in Step 2 that you are using an existing cache layer. From Step 3 and on, the layers are modified because you made a change in app.js.
+
+8. Run another container with the new image version. Notice how we map the host's port 8080 instead of 80. You can't use host port 4000 because it's already in use.
+
+    ```bash
+    docker run -p 8080:80 --name my-app-2 -d node-app:0.2
+    docker ps
+    ```
+
+    (Command Output)
+
+    ```bash
+    CONTAINER ID     IMAGE             COMMAND            CREATED             
+    xxxxxxxxxxxx     node-app:0.2      "node app.js"      53 seconds ago      ...
+    xxxxxxxxxxxx     node-app:0.1      "node app.js"      About an hour ago   ...
+    ```
+
+9. Test the containers:
+
+    ```bash
+    curl http://localhost:8080
+    ```
+
+    (Command Output)
+
+    ```bash
+    Welcome to Cloud
+    ```
+
+10. And now test the first container you made:
+
+    ```bash
+    curl http://localhost:4000
+    ```
+
+    (Command Output)
+
+    ```bash
+    Hello World
+    ```
