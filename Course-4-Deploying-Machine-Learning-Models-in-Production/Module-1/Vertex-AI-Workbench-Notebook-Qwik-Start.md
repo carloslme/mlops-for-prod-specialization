@@ -48,3 +48,7 @@ It will take several minutes for the notebook to clone.
 2. On the notebook toolbar, navigate to Edit > Clear All Outputs and then Run the cells one by one.
 
 When prompted, come back to these instructions to check your progress.
+
+# Task 3. Run your training job in the cloud
+
+There are additional steps to read in the [notebook](ai_platform_qwik_start.ipynb). Read these instructions carefully including the comments in the cells with code to ensure you are completing each step correctly.
