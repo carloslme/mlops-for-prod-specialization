@@ -302,3 +302,90 @@ Now you'll write the node application, and after that you'll build the image.
     ```bash
     Hello World
     ```
+
+# Task 4. Debug
+
+Now that you're familiar with building and running containers, go over some debugging practices.
+
+1. You can look at the logs of a container using docker logs [container_id]. If you want to follow the log's output as the container is running, use the -f option.
+
+    ```bash
+    docker logs -f [container_id]
+    ```
+
+    (Command Output)
+
+    ```bash
+    Server running at http://0.0.0.0:80/
+    ```
+
+    Sometimes you will want to start an interactive Bash session inside the running container.
+
+2. You can use `docker exec` to do this. Open another terminal (in Cloud Shell, click the + icon) and enter the following command:
+
+    ```bash
+    docker exec -it [container_id] bash
+    ```
+
+    The -it flags let you interact with a container by allocating a pseudo-tty and keeping stdin open. Notice bash ran in the WORKDIR directory (/app) specified in the Dockerfile. From here, you have an interactive shell session inside the container to debug.
+
+    (Command Output)
+
+    ```bash
+    root@xxxxxxxxxxxx:/app#
+    ```
+
+3. Look at the directory
+
+    ```bash
+    ls
+    ```
+
+    (Command Output)
+
+    ```bash
+    Dockerfile  app.js
+    ```
+
+4. Exit the Bash session:
+
+    ```bash
+    exit
+    ```
+
+5. You can examine a container's metadata in Docker by using Docker inspect:
+
+    ```bash
+    docker inspect [container_id]
+    ```
+
+    (Command Output)
+
+    ```bash
+    [
+        {
+            "Id": "xxxxxxxxxxxx....",
+            "Created": "2017-08-07T22:57:49.261726726Z",
+            "Path": "node",
+            "Args": [
+                "app.js"
+            ],
+    ...
+    ```
+
+6. Use --format to inspect specific fields from the returned JSON. For example:
+
+    ```bash
+    docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' [container_id]
+    ```
+
+    (Example Output)
+
+    ```bash
+    192.168.9.3
+    ```
+
+Be sure to check out the following Docker documentation resources for more information on debugging:
+
+* [Docker inspect reference](https://docs.docker.com/engine/reference/commandline/inspect/#examples)
+* [Docker exec reference](https://docs.docker.com/engine/reference/commandline/exec/)
