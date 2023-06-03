@@ -527,3 +527,15 @@ At this point you should have a pseudo-fresh environment.
     ```bash
     Welcome to Cloud
     ```
+
+# Congratulations
+
+Congratulations on completing the Introduction to Docker. To recap, you:
+
+* Ran containers based on public images from Docker Hub.
+
+* Built your own container images and pushed them to Google Artifact Registry.
+
+* Learned ways to debug running containers.
+
+* Ran containers based on images pulled from Google Artifact Registry.
