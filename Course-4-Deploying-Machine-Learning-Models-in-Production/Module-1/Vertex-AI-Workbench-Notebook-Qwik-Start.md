@@ -52,3 +52,7 @@ When prompted, come back to these instructions to check your progress.
 # Task 3. Run your training job in the cloud
 
 There are additional steps to read in the [notebook](ai_platform_qwik_start.ipynb). Read these instructions carefully including the comments in the cells with code to ensure you are completing each step correctly.
+
+# Congratulations
+
+In this lab you've learned how to train a TensorFlow model both locally and on Vertex AI, and then how to use your trained model for prediction.
