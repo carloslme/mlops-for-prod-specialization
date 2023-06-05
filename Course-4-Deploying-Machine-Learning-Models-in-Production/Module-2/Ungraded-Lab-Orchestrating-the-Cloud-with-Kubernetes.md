@@ -129,3 +129,79 @@ At the core of Kubernetes is the Pod.
 Pods represent and hold a collection of one or more containers. Generally, if you have multiple containers with a hard dependency on each other, you package the containers inside a single pod.
 
 ![Pods](./pods.png "Pods")
+
+# Task 4. Creating pods
+
+Pods can be created using pod configuration files. Take a moment to explore the monolith pod configuration file.
+
+1. Go to directory:
+
+    ```bash
+    cd ~/orchestrate-with-kubernetes/kubernetes
+    ```
+
+2. Run the following:
+
+    ```bash
+    cat pods/monolith.yaml
+    ```
+
+    The output shows the open configuration file:
+
+    ```bash
+    apiVersion: v1
+    kind: Pod
+    metadata:
+    name: monolith
+    labels:
+        app: monolith
+    spec:
+    containers:
+        - name: monolith
+        image: kelseyhightower/monolith:1.0.0
+        args:
+            - "-http=0.0.0.0:80"
+            - "-health=0.0.0.0:81"
+            - "-secret=secret"
+        ports:
+            - name: http
+            containerPort: 80
+            - name: health
+            containerPort: 81
+        resources:
+            limits:
+            cpu: 0.2
+            memory: "10Mi"
+    ```
+
+    There's a few things to notice here. You'll see that:
+
+    * our pod is made up of one container (the monolith).
+
+    * You're passing a few arguments to our container when it starts up.
+
+    * You're opening up port 80 for http traffic.
+
+3. Create the monolith pod using kubectl:
+
+    ```bash
+    kubectl create -f pods/monolith.yaml
+    ```
+
+4. Examine your pods. Use the kubectl get pods command to list all pods running in the default namespace:
+
+    ```bash
+    kubectl get pods
+    ```
+
+    **Note**: It may take a few seconds before the monolith pod is up and running. The monolith container image needs to be pulled from the Docker Hub before you can run it.
+
+5. Once the pod is running, use kubectl describe command to get more information about the monolith pod:
+
+    ```bash
+    kubectl describe pods monolith
+    ```
+
+    You'll see a lot of the information about the monolith pod including the Pod IP address and the event log. This information will come in handy when troubleshooting.
+
+    Kubernetes makes it easy to create pods by describing them in configuration files and easy to view information about them when they are running. At this point you have the ability to create all the pods your deployment requires!
