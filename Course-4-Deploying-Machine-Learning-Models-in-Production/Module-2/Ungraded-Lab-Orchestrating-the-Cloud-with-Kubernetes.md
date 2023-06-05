@@ -39,3 +39,41 @@ For this lab, using a managed environment such as Kubernetes Engine allows you t
     You are automatically authenticated to your cluster upon creation. If you lose connection to your Cloud Shell for any reason, run the gcloud container clusters get-credentials io command to re-authenticate.
 
     **Note**: It will take a while to create a cluster - Kubernetes Engine is provisioning a few Virtual Machines behind the scenes for you to play with!
+
+# Task 1. Get the sample code
+
+Copy the source code from the Cloud Shell command line:
+
+```bash
+gsutil cp -r gs://spls/gsp021/* .
+```
+
+Change into the directory needed for this lab:
+
+```bash
+cd orchestrate-with-kubernetes/kubernetes
+```
+
+List the files to see what you're working with:
+
+```bash
+ls
+```
+
+The sample has the following layout:
+
+```bash
+deployments/  /* Deployment manifests */
+  ...
+nginx/        /* nginx config files */
+  ...
+pods/         /* Pod manifests */
+  ...
+services/     /* Services manifests */
+  ...
+tls/          /* TLS certificates */
+  ...
+cleanup.sh    /* Cleanup script */
+```
+
+Now that you have the code -- it's time to give Kubernetes a try!
