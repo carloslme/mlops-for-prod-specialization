@@ -320,5 +320,111 @@ The level of access a service provides to a set of pods depends on the Service's
 Now you'll learn how to:
 
 * Create a service
-
 * Use label selectors to expose a limited set of Pods externally
+
+# Task 7. Creating a service
+
+Before you can create our services, first create a secure pod that can handle https traffic.
+
+1. If you've changed directories, make sure you return to the ~/orchestrate-with-kubernetes/kubernetes directory:
+
+    ```bash
+    cd ~/orchestrate-with-kubernetes/kubernetes
+    ```
+
+2. Explore the monolith service configuration file:
+
+    ```bash
+    cat pods/secure-monolith.yaml
+    ```
+
+3. Create the secure-monolith pods and their configuration data:
+
+    ```bash
+    kubectl create secret generic tls-certs --from-file tls/
+    kubectl create configmap nginx-proxy-conf --from-file nginx/proxy.conf
+    kubectl create -f pods/secure-monolith.yaml
+    ```
+
+    Now that you have a secure pod, it's time to expose the secure-monolith Pod externally.To do that, create a Kubernetes service.
+
+4. Explore the monolith service configuration file:
+
+    ```bash
+    cat services/monolith.yaml
+    Copied!
+    (Output):
+
+    kind: Service
+    apiVersion: v1
+    metadata:
+    name: "monolith"
+    spec:
+    selector:
+        app: "monolith"
+        secure: "enabled"
+    ports:
+        - protocol: "TCP"
+        port: 443
+        targetPort: 443
+        nodePort: 31000
+    type: NodePort
+    ```
+
+    **Things to note**:
+
+    * There's a selector which is used to automatically find and expose any pods with the labels `app: monolith` and `secure: enabled`.
+
+    * Now you have to expose the nodeport here because this is how you'll forward external traffic from port 31000 to nginx (on port 443).
+
+5. Use the kubectl create command to create the monolith service from the monolith service configuration file:
+
+    ```bash
+    kubectl create -f services/monolith.yaml
+    ```
+
+    (Output):
+
+    ```bash
+    service/monolith created
+    ```
+
+    You're using a port to expose the service. This means that it's possible to have port collisions if another app tries to bind to port 31000 on one of your servers.
+
+    Normally, Kubernetes would handle this port assignment. In this lab you chose a port so that it's easier to configure health checks later on.
+
+6. Use the gcloud compute firewall-rules command to allow traffic to the monolith service on the exposed nodeport:
+
+    ```bash
+    gcloud compute firewall-rules create allow-monolith-nodeport \
+    ```
+
+    Now that everything is set up you should be able to hit the secure-monolith service from outside the cluster without using port forwarding.
+
+7. First, get an external IP address for one of the nodes.
+
+    ```bash
+    gcloud compute instances list
+    ```
+
+    Now try hitting the secure-monolith service using curl:
+
+    ```bash
+    curl -k https://<EXTERNAL_IP>:31000
+    ```
+
+    Uh oh! That timed out. What's going wrong?
+
+    **Note**: It's time for a quick knowledge check.
+
+    Use the following commands to answer the questions below:
+    * `kubectl get services monolith`
+    * `kubectl describe services monolith`
+
+    Questions:
+
+    * Why are you unable to get a response from the monolith service?
+    * How many endpoints does the monolith service have?
+    * What labels must a Pod have to be picked up by the monolith service?
+
+    Hint: it has to do with labels. You'll fix the issue in the next section.
