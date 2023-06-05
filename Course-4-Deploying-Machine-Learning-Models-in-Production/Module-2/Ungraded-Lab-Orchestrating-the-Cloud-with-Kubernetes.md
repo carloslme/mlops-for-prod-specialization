@@ -487,3 +487,98 @@ Pods are tied to the lifetime of the Node they are created on. In the example ab
 That's pretty cool!
 
 It's time to combine everything you learned about Pods and Services to break up the monolith application into smaller Services using Deployments.
+
+# Task 10. Creating deployments
+
+You're going to break the monolith app into three separate pieces:
+
+* auth - Generates JWT tokens for authenticated users.
+* hello - Greet authenticated users.
+* frontend - Routes traffic to the auth and hello services.
+
+You are ready to create deployments, one for each service. Afterwards, you'll define internal services for the auth and hello deployments and an external service for the frontend deployment. Once finished you'll be able to interact with the microservices just like with Monolith only now each piece will be able to be scaled and deployed, independently!
+
+1. Get started by examining the auth deployment configuration file.
+
+    ```bash
+    cat deployments/auth.yaml
+    ```
+
+    (Output)
+
+    ```bash
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+    name: auth
+    spec:
+    selector:
+        matchlabels:
+        app: auth
+    replicas: 1
+    template:
+        metadata:
+        labels:
+            app: auth
+            track: stable
+        spec:
+        containers:
+            - name: auth
+            image: "kelseyhightower/auth:2.0.0"
+            ports:
+                - name: http
+                containerPort: 80
+                - name: health
+                containerPort: 81
+    ...
+    ```
+
+The deployment is creating 1 replica, and you're using version 2.0.0 of the auth container.
+
+When you run the kubectl create command to create the auth deployment it will make one pod that conforms to the data in the Deployment manifest. This means you can scale the number of Pods by changing the number specified in the Replicas field.
+
+2. Anyway, go ahead and create your deployment object:
+
+    ```bash
+    kubectl create -f deployments/auth.yaml
+    ```
+
+3. It's time to create a service for your auth deployment. Use the kubectl create command to create the auth service:
+
+    ```bash
+    kubectl create -f services/auth.yaml
+    ```
+
+4. Now do the same thing to create and expose the hello deployment:
+
+    ```bash
+    kubectl create -f deployments/hello.yaml
+    kubectl create -f services/hello.yaml
+    ```
+
+5. And one more time to create and expose the frontend Deployment.
+
+    ```bash
+    kubectl create configmap nginx-frontend-conf --from-file=nginx/frontend.conf
+    kubectl create -f deployments/frontend.yaml
+    kubectl create -f services/frontend.yaml
+    ```
+
+    **Note**: There is one more step to creating the frontend because you need to store some configuration data with the container.
+6. Interact with the frontend by grabbing its External IP and then curling to it:
+
+    ```bash
+    kubectl get services frontend
+    ```
+
+    **Note**: It might take a minute for the external IP address to be generated. Run the above command again if the EXTERNAL-IP column status is pending.
+
+    ```bash
+    curl -k https://<EXTERNAL-IP>
+    ```
+
+    And you get a hello response back!
+
+# Congratulations
+
+You've developed a multi-service application using Kubernetes. The skills you've learned here will allow you to deploy complex applications on Kubernetes using a collection of deployments and services.
