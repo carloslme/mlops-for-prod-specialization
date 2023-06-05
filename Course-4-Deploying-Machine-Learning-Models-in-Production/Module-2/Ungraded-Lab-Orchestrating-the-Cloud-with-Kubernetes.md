@@ -121,3 +121,11 @@ curl http://<External IP>:80
 ```
 
 And there you go! Kubernetes supports an easy to use workflow out of the box using the kubectl run and expose commands.
+
+# Task 3. Pods
+
+At the core of Kubernetes is the Pod.
+
+Pods represent and hold a collection of one or more containers. Generally, if you have multiple containers with a hard dependency on each other, you package the containers inside a single pod.
+
+![Pods](./pods.png "Pods")
