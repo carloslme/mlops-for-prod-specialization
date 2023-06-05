@@ -205,3 +205,96 @@ Pods can be created using pod configuration files. Take a moment to explore the 
     You'll see a lot of the information about the monolith pod including the Pod IP address and the event log. This information will come in handy when troubleshooting.
 
     Kubernetes makes it easy to create pods by describing them in configuration files and easy to view information about them when they are running. At this point you have the ability to create all the pods your deployment requires!
+
+# Task 5. Interacting with pods
+
+By default, pods are allocated a private IP address and cannot be reached outside of the cluster. Use the kubectl port-forward command to map a local port to a port inside the monolith pod.
+
+**Note**: From this point on the lab will ask you to work in multiple cloud shell tabs to set up communication between the pods. Any commands that are executed in a second or third command shell will be denoted in the command's instructions.
+
+1. Open a second Cloud Shell terminal. Now you have two terminals, one to run the kubectl port-forward command, and the other to issue curl commands.
+
+2. In the 2nd terminal, run this command to set up port-forwarding:
+
+    ```bash
+    kubectl port-forward monolith 10080:80
+    ```
+
+3. Now in the 1st terminal start talking to your pod using curl:
+
+    ```bash
+    curl <http://127.0.0.1:10080>
+    ```
+
+    Yes! You got a very friendly "hello" back from your container.
+
+4. Now use the curl command to see what happens when you hit a secure endpoint:
+
+    ```bash
+    curl <http://127.0.0.1:10080/secure>
+    ```
+
+    Uh oh.
+
+5. Try logging in to get an auth token back from the monolith:
+
+    ```bash
+    curl -u user <http://127.0.0.1:10080/login>
+    ```
+
+6. At the login prompt, use the super-secret password "password" to login.
+    Logging in caused a JWT token to print out.
+
+7. Since Cloud Shell does not handle copying long strings well, create an environment variable for the token.
+
+    ```bash
+    TOKEN=$(curl <http://127.0.0.1:10080/login> -u user|jq -r '.token')
+    ```
+
+8. Enter the super-secret password "password" again when prompted for the host password.
+
+9. Use this command to copy and then use the token to hit the secure endpoint with curl:
+
+    ``bash
+    curl -H "Authorization: Bearer $TOKEN" <http://127.0.0.1:10080/secure>
+    ``
+
+    At this point you should get a response back from our application, letting us know everything is right in the world again.
+
+10. Use the kubectl logs command to view the logs for the monolith Pod.
+
+    ```bash
+    kubectl logs monolith
+    ```
+
+11. Open a 3rd terminal and use the -f flag to get a stream of the logs happening in real-time:
+
+    ```bash
+    kubectl logs -f monolith
+    ```
+
+12. Now if you use curl in the 1st terminal to interact with the monolith, you can see the logs updating (in the 3rd terminal):
+
+    ```bash
+    curl <http://127.0.0.1:10080>
+    ```
+
+13. Use the kubectl exec command to run an interactive shell inside the Monolith Pod. This can come in handy when you want to troubleshoot from within a container:
+
+    ```bash
+    kubectl exec monolith --stdin --tty -c monolith -- /bin/sh
+    ```
+
+14. For example, once you have a shell into the monolith container you can test external connectivity using the ping command:
+
+    ```bash
+    ping -c 3 google.com
+    ```
+
+15. Be sure to log out when you're done with this interactive shell.
+
+    ```bash
+    exit
+    ```
+
+    As you can see, interacting with pods is as easy as using the kubectl command. If you need to hit a container remotely, or get a login shell, Kubernetes provides everything you need to get up and going.
