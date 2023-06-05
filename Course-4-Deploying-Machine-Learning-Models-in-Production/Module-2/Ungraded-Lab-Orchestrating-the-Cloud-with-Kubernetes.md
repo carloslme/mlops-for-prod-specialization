@@ -428,3 +428,45 @@ Before you can create our services, first create a secure pod that can handle ht
     * What labels must a Pod have to be picked up by the monolith service?
 
     Hint: it has to do with labels. You'll fix the issue in the next section.
+
+# Task 8. Adding labels to pods
+
+Currently the monolith service does not have endpoints. One way to troubleshoot an issue like this is to use the kubectl get pods command with a label query.
+
+1. You can see that you have quite a few pods running with the monolith label.
+
+    ```bash
+    kubectl get pods -l "app=monolith"
+    ```
+
+2. But what about "app=monolith" and "secure=enabled"?
+
+    ```bash
+    kubectl get pods -l "app=monolith,secure=enabled"
+    ```
+
+    Notice this label query does not print any results. It seems like you need to add the "secure=enabled" label to them.
+
+3. Use the kubectl label command to add the missing secure=enabled label to the secure-monolith Pod. Afterwards, you can check and see that your labels have been updated.
+
+    ```bash
+    kubectl label pods secure-monolith 'secure=enabled'
+    kubectl get pods secure-monolith --show-labels
+    ```
+
+4. Now that your pods are correctly labeled, view the list of endpoints on the monolith service:
+
+    ```bash
+    kubectl describe services monolith | grep Endpoints
+    ```
+
+    And you have one!
+
+5. Test this out by hitting one of our nodes again.
+
+    ```bash
+    gcloud compute instances list
+    curl -k https://<EXTERNAL_IP>:31000
+    ```
+
+    Bam! Houston, we have contact.
