@@ -470,3 +470,20 @@ Currently the monolith service does not have endpoints. One way to troubleshoot 
     ```
 
     Bam! Houston, we have contact.
+
+# Task 9. Deploying applications with Kubernetes
+
+The goal of this lab is to get you ready for scaling and managing containers in production. That's where Deployments come in. Deployments are a declarative way to ensure that the number of Pods running is equal to the desired number of Pods, specified by the user.
+
+![Deployments](./deployments.png "Deployments")
+
+The main benefit of Deployments is in abstracting away the low level details of managing Pods. Behind the scenes Deployments use Replica Sets to manage starting and stopping the Pods. If Pods need to be updated or scaled, the Deployment will handle that. Deployment also handles restarting Pods if they happen to go down for some reason.
+
+Look at a quick example:
+![Deployments_2](./deployments_2.png "Deployments_2")
+
+Pods are tied to the lifetime of the Node they are created on. In the example above, Node3 went down (taking a Pod with it). Instead of manually creating a new Pod and finding a Node for it, your Deployment created a new Pod and started it on Node2.
+
+That's pretty cool!
+
+It's time to combine everything you learned about Pods and Services to break up the monolith application into smaller Services using Deployments.
