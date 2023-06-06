@@ -229,3 +229,45 @@ You are now ready to deploy TensorFlow Serving to GKE and configure it to serve 
     ```
 
 4. Wait till the READY column in the output of the previous command changes to 1/1.
+
+# Task 6. Exposing the deployment
+
+1. Inspect the manifest for the service:
+
+    ```bash
+    cat tf-serving/service.yaml
+    ```
+
+    Notice that the service is of type LoadBalancer and that it exposes two ports: 8500 and 8501. By default, Tensorflow Serving uses port 8500 for the gRPC interface and port 8501 for the REST interface.
+
+    ```bash
+    ...
+    spec:
+    type: LoadBalancer
+    ports:
+    - port: 8500
+        protocol: TCP
+        name: tf-serving-grpc
+    - port: 8501
+        protocol: TCP
+        name: tf-serving-http
+    selector:
+        app: image-classifier
+    ...
+    ```
+
+2. Create the service:
+
+    ```bash
+    kubectl apply -f tf-serving/service.yaml
+    ```
+
+    It may take a few minutes before the service is operational. Wait till the external IP address exposed by the service has been set.
+
+3. You can check the status of provisioning the service by executing the following command:
+
+    ```bash
+    kubectl get svc image-classifier
+    ```
+
+    When the service is ready, you should see output that provides service details.
