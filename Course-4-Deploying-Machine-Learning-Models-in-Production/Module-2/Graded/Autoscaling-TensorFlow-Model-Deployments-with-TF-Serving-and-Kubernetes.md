@@ -344,3 +344,59 @@ Refer to Locust documentation for more information on Locust settings.
     --headless \
     --host http://${EXTERNAL_IP}:8501
     ```
+
+# Task 11. Monitoring the load test
+
+You will monitor the behavior of the TensorFlow Serving deployment and the GKE node pool using [GKE Dashboards](https://cloud.google.com/kubernetes-engine/docs/concepts/dashboards).
+
+1. To monitor the TensorFlow Serving deployment open a new tab in the same browser window in which you run Cloud Shell and navigate to the following URL:
+
+    ```bash
+    <https://console.cloud.google.com/kubernetes/deployment/us-central1-f/cluster-1/default/image-classifier/overview>
+    ```
+
+    The Image-Classifier page opens.
+
+    Two lines on the CPU line chart in the upper left part of the page show the requested and the currently utilized CPUs. As the load increases, the number of requested CPUs will increase in steps of 3 as new replicas are started. The number of used CPUs will be a ragged curve representing the current utilization averaged across all allocated CPU resources. The CPU line chart shows data delayed by about 60 seconds.
+
+    Note that you need to click on the Refresh button on the top menu to see the updates.
+
+    The Managed pods widget shows the current number of replicas. At the beginning of the test it will show one replica:
+
+    ![Managed Pod 1](./managed_pod_1.png "Managed Pod 1")
+
+    Soon you will see two pods. One running and one in the unschedulable state:
+
+    ![Managed Pod 2](./managed_pod_2.png "Managed Pod 2")
+
+    Recall that only one TensorFlow Serving pod can fit on a single cluster node. The pod stays in the unschedulable state while GKE autoscaler creates a new node.
+
+2. After both pods are in the running state you can verify that a new node has been created in the default node pool by opening the node pool dashboard in another browser tab.
+
+    ```bash
+    https://console.cloud.google.com/kubernetes/nodepool/us-central1-f/cluster-1/default-pool
+    ```
+
+    ![Nodes](./nodes.png "Nodes")
+
+    At some point the fourth replica is scheduled:
+
+    ![Managed Pod 3](./managed_pod_3.png "Managed Pod 3")
+
+    The fourth replica will not transition to the running state as the GKE autoscaler was configured to create a maximum of three nodes.
+
+    After about 15 minutes, the script stops sending requests. As a result, the number of TensorFlow Serving replicas will also go down.
+
+    By default, the HPA will wait for 5 minutes before triggering the downscaling operation so you will need to wait at least 5 minutes to observe this behavior.
+
+    As the number of replicas goes down, the GKE autoscaler starts removing nodes from the default node pool.
+
+    For the purposes of scaling down, the autoscaler calculates the group's recommended target size based on peak load over the last 10 minutes. These last 10 minutes are referred to as the stabilization period. So be patient. It will take over 15 minutes after the script stopped generating predictions to see the changes in the size of the default node pool.
+
+# Task 12. Stopping the load test
+
+To stop the load test, kill the Locust process by issuing the Ctrl+C command in the Cloud Shell terminal.
+
+# Congratulations
+
+You used TensorFlow Serving and Google Kubernetes Engine to deploy and monitor the ResNet101 model!
