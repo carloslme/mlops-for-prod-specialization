@@ -329,3 +329,18 @@ You are now ready to load test the ResNet101 model. As described previously, you
     ```bash
     locust -V
     ```
+
+# Task 10. Starting a load test
+
+The locust folder contains the Locust script that generates prediction requests against the ResNet101 model. The script uses the same request body you used previously to verify the TensorFlow Serving deployment. The script is configured to progressively increase the number of simulated users that send prediction requests to the ResNet101 model. After reaching the maximum number of configured users, the script stops generating the load. The number of users is adjusted every 60s.
+
+Refer to Locust documentation for more information on Locust settings.
+
+* To start the test, execute the command:
+
+    ```bash
+    cd locust
+    locust -f tasks.py \
+    --headless \
+    --host http://${EXTERNAL_IP}:8501
+    ```
