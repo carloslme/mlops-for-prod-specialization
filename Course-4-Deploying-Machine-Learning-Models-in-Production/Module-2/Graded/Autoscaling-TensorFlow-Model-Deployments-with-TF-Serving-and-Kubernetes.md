@@ -290,3 +290,18 @@ The final step is to add Horizontal Pod Autoscaler (HPA). The command below conf
     ```bash
     kubectl get hpa
     ```
+
+# Task 8. Testing the model
+
+The Tensorflow Serving model server is now up and running. You can test it by submitting a request using the curl command. In the locust folder you can find a sample request body (request-body.json) formatted to conform to the [TensorFlow Serving REST API](https://www.tensorflow.org/tfx/serving/api_rest). It contains a picture of [Grace Hopper](https://en.wikipedia.org/wiki/Grace_Hopper).
+
+![Grace Hopper](./grace_hopper.png "Grace Hopper")
+
+To invoke the model set the `EXTERNAL_IP` environment variable to the external IP of your service and execute the `curl` command:
+
+```bash
+EXTERNAL_IP=[YOUR_SERVICE_IP]
+curl -d @locust/request-body.json -X POST http://${EXTERNAL_IP}:8501/v1/models/image_classifier:predict
+```
+
+The response returned by the model includes the list of the 5 most likely labels with the associated probabilities.
