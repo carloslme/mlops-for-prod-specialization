@@ -133,3 +133,29 @@ You are now ready to deploy TensorFlow Serving to GKE and configure it to serve 
 3. When the deployment is ready, you will create a [Kubernetes Service](https://kubernetes.io/docs/concepts/services-networking/service/) to expose the deployment through a load balancer.
 
 4. Finally, you will configure Horizontal Pod Autoscaler.
+
+# Task 4. Creating ConfigMap
+
+1. Use your preferred command line editor or Cloud Shell Editor to update the MODEL_PATH field in the tf-serving/configmap.yaml file to reference your bucket. Recall that the bucket name was stored in the $MODEL_BUCKET environment variable:
+
+    ```bash
+    echo $MODEL_BUCKET
+    ```
+
+    After the update the configmap.yaml should look similar to the one below:
+
+    ```bash
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+    name: tfserving-configs
+    data:
+    MODEL_NAME: image_classifier
+    MODEL_PATH: gs://qwiklabs-gcp-03-4b91a600a7a2-bucket/resnet_101
+    ```
+
+2. Using kubectl create the ConfigMap:
+
+    ```bash
+    kubectl apply -f tf-serving/configmap.yaml
+    ```
