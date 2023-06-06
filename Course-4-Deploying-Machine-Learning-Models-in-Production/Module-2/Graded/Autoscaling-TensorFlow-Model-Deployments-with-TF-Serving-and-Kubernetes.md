@@ -271,3 +271,22 @@ You are now ready to deploy TensorFlow Serving to GKE and configure it to serve 
     ```
 
     When the service is ready, you should see output that provides service details.
+
+# Task 7. Configuring horizontal pod autoscaler
+
+The final step is to add Horizontal Pod Autoscaler (HPA). The command below configures HPA to start a new replica of TensorFlow Serving whenever the mean CPU utilization across all already running replicas reaches 60%. HPA will attempt to create up to 4 replicas and scale down to 1 replica.
+
+1. Enter the command:
+
+    ```bash
+    kubectl autoscale deployment image-classifier \
+    --cpu-percent=60 \
+    --min=1 \
+    --max=4 
+    ```
+
+2. Check the status of the HPA:
+
+    ```bash
+    kubectl get hpa
+    ```
