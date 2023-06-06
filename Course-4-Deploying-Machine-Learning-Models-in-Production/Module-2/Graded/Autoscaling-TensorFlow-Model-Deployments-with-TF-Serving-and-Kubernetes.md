@@ -305,3 +305,27 @@ curl -d @locust/request-body.json -X POST http://${EXTERNAL_IP}:8501/v1/models/i
 ```
 
 The response returned by the model includes the list of the 5 most likely labels with the associated probabilities.
+
+# Task 9. Installing Locust
+
+You are now ready to load test the ResNet101 model. As described previously, you will use an open source load testing tool Locust to generate prediction requests.
+
+1. To install Locust:
+
+    ```bash
+    pip3 install locust==1.4.1
+    ```
+
+    The installation process can take a few minutes. The Locust command line interface (CLI) gets installed into the `~/.local/bin` folder which is not on PATH.
+
+2. You need to add this folder to PATH:
+
+    ```bash
+    export PATH=~/.local/bin:$PATH
+    ```
+
+3. To validate the installation and show the Locust version number:
+
+    ```bash
+    locust -V
+    ```
