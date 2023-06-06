@@ -159,3 +159,73 @@ You are now ready to deploy TensorFlow Serving to GKE and configure it to serve 
     ```bash
     kubectl apply -f tf-serving/configmap.yaml
     ```
+
+# Task 5. Creating TensorFlow Serving deployment
+
+1. Inspect the manifest for the TensorFlow Serving deployment:
+
+    ```bash
+    cat tf-serving/deployment.yaml
+    ```
+
+    Notice that the TF Serving process is configured to serve the model referenced by the MODEL_PATH environment variable and that this variable is set by the ConfigMap you created in the previous step.
+
+    ```bash
+    ...
+        spec:
+        containers:
+        - name: tf-serving
+            image: "tensorflow/serving"
+            args: 
+            - "--model_name=$(MODEL_NAME)"
+            - "--model_base_path=$(MODEL_PATH)" 
+            envFrom:
+            - configMapRef:
+                name: tfserving-configs
+    ...
+    ```
+
+    Also notice that the deployment is configured to start with one replica.
+
+    ```bash
+    ...
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+    name: image-classifier
+    namespace: default
+    labels:
+        app: image-classifier
+    spec:
+    replicas: 1
+    ...
+    ```
+
+    In the deployment manifest, there is an explicit request for CPU and RAM resources:
+
+    ```bash
+    ...
+    resources:
+    requests:
+        cpu: "3"
+        memory: 4Gi
+    ...
+    ```
+
+    At start, each replica requests 3 CPUs and 4 Gigabytes of RAM. Your cluster is configured with n1-standard-4 nodes that have 4 virtual CPUs and 15GB or RAM. It means that only a single replica can run on a node.
+
+2. Create the deployment:
+
+    ```bash
+    kubectl apply -f tf-serving/deployment.yaml
+    ```
+
+    It may take a few minutes before the deployment is ready.
+
+3. To check the status of the deployment:
+
+    ```bash
+    kubectl get deployments
+    ```
+
+4. Wait till the READY column in the output of the previous command changes to 1/1.
