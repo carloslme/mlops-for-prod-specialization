@@ -48,3 +48,14 @@ Summary of the tasks performed during the lab:
 You will use Cloud Shell and Cloud Console for all of the tasks in the lab. Some tasks require you to edit text files. You can use any of the classic command line text editors pre-installed in Cloud Shell, including vim, emacs, or nano. You can also use the built-in Cloud Shell Editor.
 
 Before proceeding, make sure that you completed the Activate Cloud Shell step in the Setup and requirements instructions and your Cloud Shell is open and ready.
+
+# Task 1. Getting lab files
+
+Start by getting the lab files from GitHub:
+
+```bash
+cd
+SRC_REPO=https://github.com/GoogleCloudPlatform/mlops-on-gcp
+kpt pkg get $SRC_REPO/workshops/mlep-qwiklabs/tfserving-gke-autoscaling tfserving-gke
+cd tfserving-gke
+```
