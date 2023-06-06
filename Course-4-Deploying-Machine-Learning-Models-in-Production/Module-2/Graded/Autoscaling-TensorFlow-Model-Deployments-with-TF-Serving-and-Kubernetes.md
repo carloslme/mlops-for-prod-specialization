@@ -104,3 +104,32 @@ cd tfserving-gke
     ```bash
     gcloud container clusters get-credentials $CLUSTER_NAME 
     ```
+
+# Task 3. Deploying ResNet101
+
+The pretrained ResNet101 model in the SavedModel format has been uploaded to a public Cloud Storage location.
+
+You will first download the model files to a storage bucket in your project. Since storage buckets are a global resource in Google Cloud you have to use a unique bucket name. For the purpose of this lab, you can use your project id as a name prefix.
+
+1. To create a storage bucket in your project:
+
+    ```bash
+    export MODEL_BUCKET=${PROJECT_ID}-bucket
+    gsutil mb gs://${MODEL_BUCKET}
+    ```
+
+2. After the bucket has been created, copy the model files:
+
+    ```bash
+    gsutil cp -r gs://spls/gsp777/resnet_101 gs://${MODEL_BUCKET}
+    ```
+
+You are now ready to deploy TensorFlow Serving to GKE and configure it to serve the ResNet101 model. You will deploy TF Serving in four steps:
+
+1. First you will create a [Kubernetes ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/) that points to the location of the ResNet101 model in your storage bucket.
+
+2. Then, you will create a [Kubernetes Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) using a [standard TensorFlow Serving image](https://hub.docker.com/r/tensorflow/serving) from Docker Hub.
+
+3. When the deployment is ready, you will create a [Kubernetes Service](https://kubernetes.io/docs/concepts/services-networking/service/) to expose the deployment through a load balancer.
+
+4. Finally, you will configure Horizontal Pod Autoscaler.
