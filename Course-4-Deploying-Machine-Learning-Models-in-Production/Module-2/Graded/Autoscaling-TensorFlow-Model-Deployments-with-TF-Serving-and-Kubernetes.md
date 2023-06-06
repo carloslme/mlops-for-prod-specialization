@@ -59,3 +59,48 @@ SRC_REPO=https://github.com/GoogleCloudPlatform/mlops-on-gcp
 kpt pkg get $SRC_REPO/workshops/mlep-qwiklabs/tfserving-gke-autoscaling tfserving-gke
 cd tfserving-gke
 ```
+
+# Task 2. Creating a GKE cluster
+
+1. Set the default compute zone and a couple of environment variables to store your project id and cluster name:
+
+    ```bash
+    gcloud config set compute/zone us-central1-f
+    PROJECT_ID=$(gcloud config get-value project)
+    CLUSTER_NAME=cluster-1
+    ```
+
+2. To create a cluster execute the below command - it may take a few minutes to complete:
+
+    ```bash
+    gcloud beta container clusters create $CLUSTER_NAME \
+    --cluster-version=latest \
+    --machine-type=n1-standard-4 \
+    --enable-autoscaling \
+    --min-nodes=1 \
+    --max-nodes=3 \
+    --num-nodes=1 
+    ```
+
+    After the command completes you should see the output similar to one below:
+
+    ```bash
+    To inspect the contents of your cluster, go to: https://console.cloud.google.com/kubernetes/workload_/gcloud/us-central1-f/cluster-1?project=qwiklabs-gcp-00-aea5e829799a
+    kubeconfig entry generated for cluster-1.
+    NAME: cluster-1
+    LOCATION: us-central1-f
+    MASTER_VERSION: 1.24.1-gke.1400
+    MASTER_IP: 34.67.10.235
+    MACHINE_TYPE: n1-standard-4
+    NODE_VERSION: 1.24.1-gke.1400
+    NUM_NODES: 1
+    STATUS: RUNNING
+    ```
+
+3. The command created a CPU-based GKE cluster. The cluster has a default node pool, which is configured to autoscale from 1 to 3 nodes. Initially, the node pool has only one node.
+
+    Get the credentials for you new cluster so you can interact with it using kubectl:
+
+    ```bash
+    gcloud container clusters get-credentials $CLUSTER_NAME 
+    ```
