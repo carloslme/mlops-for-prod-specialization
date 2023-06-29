@@ -162,7 +162,7 @@ Since you defined labels for the versions of the models you can consume them eit
 Begin by sending a `POST` request to version 1 of the model:
 
 ```bash
-curl -X POST http://localhost:8501/v1/models/animals/versions/2:predict \
+curl -X POST http://localhost:8501/v1/models/animals/versions/1:predict \
     -d @./dog_example.json \
     -H "Content-Type: application/json"
 ```
@@ -179,7 +179,14 @@ curl -X POST http://localhost:8501/v1/models/animals/labels/stable:predict \
 
 Since the `stable` model is the same as `version 2` you should see the same values you got from the previous requests.
 
+```bash
+curl -X POST http://localhost:8501/v1/models/animals/labels/canary:predict \
+    -d @./dog_example.json \
+    -H "Content-Type: application/json"
+```
+
 Now try out other versions and labels and see what you get. You can also try deleting version 1 from the config file and see how TFS will fail to load this model now.
+
 
 ## Stopping the server
 
