@@ -1,0 +1,584 @@
+# Ungraded Lab - Orchestrating the Cloud with Kubernetes
+
+In this lab, you will:
+
+* provision a complete Kubernetes cluster using Kubernetes Engine
+
+* deploy and manage Docker containers using kubectl.
+
+* break an application into microservices using Kubernetes' Deployments and Services.
+
+These will help you become familiar with the commands to create and manage the Kubernetes clusters in this week's assignment.
+
+**Note**: [App](https://github.com/kelseyhightower/app) is hosted on GitHub and provides an example 12-Factor application. During this lab you will be working with the following Docker images:
+
+* [kelseyhightower/monolith](https://hub.docker.com/r/kelseyhightower/monolith) - Monolith includes auth and hello services.
+* [kelseyhightower/auth](https://hub.docker.com/r/kelseyhightower/auth) - Auth microservice. Generates JWT tokens for authenticated users.
+* [kelseyhightower/hello](https://hub.docker.com/r/kelseyhightower/hello) - Hello microservice. Greets authenticated users.
+* [nginx](https://hub.docker.com/_/nginx) - Frontend to the auth and hello services.
+
+For this lab, using a managed environment such as Kubernetes Engine allows you to focus on experiencing Kubernetes rather than setting up the underlying infrastructure.
+
+# Setup and requirements
+
+1. Get access ot GCP
+2. Activate Cloud Shell
+3. Google Kubernetes Engine
+    In the cloud shell environment type the following command to set the zone:
+
+    ```bash
+    gcloud config set compute/zone us-central1-b
+    ```
+
+    Start up a cluster for use in this lab:
+
+    ```bash
+    gcloud container clusters create io
+    ```
+
+    You are automatically authenticated to your cluster upon creation. If you lose connection to your Cloud Shell for any reason, run the gcloud container clusters get-credentials io command to re-authenticate.
+
+    **Note**: It will take a while to create a cluster - Kubernetes Engine is provisioning a few Virtual Machines behind the scenes for you to play with!
+
+# Task 1. Get the sample code
+
+1. Copy the source code from the Cloud Shell command line:
+
+```bash
+gsutil cp -r gs://spls/gsp021/* .
+```
+
+2. Change into the directory needed for this lab:
+
+```bash
+cd orchestrate-with-kubernetes/kubernetes
+```
+
+3. List the files to see what you're working with:
+
+```bash
+ls
+```
+
+The sample has the following layout:
+
+```bash
+deployments/  /* Deployment manifests */
+  ...
+nginx/        /* nginx config files */
+  ...
+pods/         /* Pod manifests */
+  ...
+services/     /* Services manifests */
+  ...
+tls/          /* TLS certificates */
+  ...
+cleanup.sh    /* Cleanup script */
+```
+
+Now that you have the code -- it's time to give Kubernetes a try!
+
+# Task 2. Quick Kubernetes Demo
+
+The easiest way to get started with Kubernetes is to use the kubectl create command.
+
+1. Use it to launch a single instance of the nginx container:
+
+```bash
+kubectl create deployment nginx --image=nginx:1.10.0
+```
+
+Kubernetes has created a deployment -- more about deployments later, but for now all you need to know is that deployments keep the pods up and running even when the nodes they run on fail.
+
+In Kubernetes, all containers run in a pod.
+
+2. Use the kubectl get pods command to view the running nginx container:
+
+```bash
+kubectl get pods
+```
+
+3. Once the nginx container has a Running status you can expose it outside of Kubernetes using the kubectl expose command:
+
+```bash
+kubectl expose deployment nginx --port 80 --type LoadBalancer
+```
+
+So what just happened? Behind the scenes Kubernetes created an external Load Balancer with a public IP address attached to it. Any client who hits that public IP address will be routed to the pods behind the service. In this case that would be the nginx pod.
+
+4. List our services now using the kubectl get services command:
+
+```bash
+kubectl get services
+```
+
+**Note**: It may take a few seconds before the ExternalIP field is populated for your service. This is normal -- just re-run the kubectl get services command every few seconds until the field populates.
+
+5. Add the External IP to this command to hit the Nginx container remotely:
+
+```bash
+curl http://<External IP>:80
+```
+
+And there you go! Kubernetes supports an easy to use workflow out of the box using the kubectl run and expose commands.
+
+# Task 3. Pods
+
+At the core of Kubernetes is the Pod.
+
+Pods represent and hold a collection of one or more containers. Generally, if you have multiple containers with a hard dependency on each other, you package the containers inside a single pod.
+
+![Pods](./pods.png "Pods")
+
+# Task 4. Creating pods
+
+Pods can be created using pod configuration files. Take a moment to explore the monolith pod configuration file.
+
+1. Go to directory:
+
+    ```bash
+    cd ~/orchestrate-with-kubernetes/kubernetes
+    ```
+
+2. Run the following:
+
+    ```bash
+    cat pods/monolith.yaml
+    ```
+
+    The output shows the open configuration file:
+
+    ```bash
+    apiVersion: v1
+    kind: Pod
+    metadata:
+    name: monolith
+    labels:
+        app: monolith
+    spec:
+    containers:
+        - name: monolith
+        image: kelseyhightower/monolith:1.0.0
+        args:
+            - "-http=0.0.0.0:80"
+            - "-health=0.0.0.0:81"
+            - "-secret=secret"
+        ports:
+            - name: http
+            containerPort: 80
+            - name: health
+            containerPort: 81
+        resources:
+            limits:
+            cpu: 0.2
+            memory: "10Mi"
+    ```
+
+    There's a few things to notice here. You'll see that:
+
+    * our pod is made up of one container (the monolith).
+
+    * You're passing a few arguments to our container when it starts up.
+
+    * You're opening up port 80 for http traffic.
+
+3. Create the monolith pod using kubectl:
+
+    ```bash
+    kubectl create -f pods/monolith.yaml
+    ```
+
+4. Examine your pods. Use the kubectl get pods command to list all pods running in the default namespace:
+
+    ```bash
+    kubectl get pods
+    ```
+
+    **Note**: It may take a few seconds before the monolith pod is up and running. The monolith container image needs to be pulled from the Docker Hub before you can run it.
+
+5. Once the pod is running, use kubectl describe command to get more information about the monolith pod:
+
+    ```bash
+    kubectl describe pods monolith
+    ```
+
+    You'll see a lot of the information about the monolith pod including the Pod IP address and the event log. This information will come in handy when troubleshooting.
+
+    Kubernetes makes it easy to create pods by describing them in configuration files and easy to view information about them when they are running. At this point you have the ability to create all the pods your deployment requires!
+
+# Task 5. Interacting with pods
+
+By default, pods are allocated a private IP address and cannot be reached outside of the cluster. Use the kubectl port-forward command to map a local port to a port inside the monolith pod.
+
+**Note**: From this point on the lab will ask you to work in multiple cloud shell tabs to set up communication between the pods. Any commands that are executed in a second or third command shell will be denoted in the command's instructions.
+
+1. Open a second Cloud Shell terminal. Now you have two terminals, one to run the kubectl port-forward command, and the other to issue curl commands.
+
+2. In the 2nd terminal, run this command to set up port-forwarding:
+
+    ```bash
+    kubectl port-forward monolith 10080:80
+    ```
+
+3. Now in the 1st terminal start talking to your pod using curl:
+
+    ```bash
+    curl <http://127.0.0.1:10080>
+    ```
+
+    Yes! You got a very friendly "hello" back from your container.
+
+4. Now use the curl command to see what happens when you hit a secure endpoint:
+
+    ```bash
+    curl <http://127.0.0.1:10080/secure>
+    ```
+
+    Uh oh.
+
+5. Try logging in to get an auth token back from the monolith:
+
+    ```bash
+    curl -u user <http://127.0.0.1:10080/login>
+    ```
+
+6. At the login prompt, use the super-secret password "password" to login.
+    Logging in caused a JWT token to print out.
+
+7. Since Cloud Shell does not handle copying long strings well, create an environment variable for the token.
+
+    ```bash
+    TOKEN=$(curl <http://127.0.0.1:10080/login> -u user|jq -r '.token')
+    ```
+
+8. Enter the super-secret password "password" again when prompted for the host password.
+
+9. Use this command to copy and then use the token to hit the secure endpoint with curl:
+
+    ``bash
+    curl -H "Authorization: Bearer $TOKEN" <http://127.0.0.1:10080/secure>
+    ``
+
+    At this point you should get a response back from our application, letting us know everything is right in the world again.
+
+10. Use the kubectl logs command to view the logs for the monolith Pod.
+
+    ```bash
+    kubectl logs monolith
+    ```
+
+11. Open a 3rd terminal and use the -f flag to get a stream of the logs happening in real-time:
+
+    ```bash
+    kubectl logs -f monolith
+    ```
+
+12. Now if you use curl in the 1st terminal to interact with the monolith, you can see the logs updating (in the 3rd terminal):
+
+    ```bash
+    curl <http://127.0.0.1:10080>
+    ```
+
+13. Use the kubectl exec command to run an interactive shell inside the Monolith Pod. This can come in handy when you want to troubleshoot from within a container:
+
+    ```bash
+    kubectl exec monolith --stdin --tty -c monolith -- /bin/sh
+    ```
+
+14. For example, once you have a shell into the monolith container you can test external connectivity using the ping command:
+
+    ```bash
+    ping -c 3 google.com
+    ```
+
+15. Be sure to log out when you're done with this interactive shell.
+
+    ```bash
+    exit
+    ```
+
+    As you can see, interacting with pods is as easy as using the kubectl command. If you need to hit a container remotely, or get a login shell, Kubernetes provides everything you need to get up and going.
+
+# Task 6. Services
+
+Pods aren't meant to be persistent. They can be stopped or started for many reasons - like failed liveness or readiness checks - and this leads to a problem:
+
+What happens if you want to communicate with a set of Pods? When they get restarted they might have a different IP address.
+
+That's where Services come in. Services provide stable endpoints for Pods.
+
+![Pods](./services.png "Pods")
+
+Services use labels to determine what Pods they operate on. If Pods have the correct labels, they are automatically picked up and exposed by our services.
+
+The level of access a service provides to a set of pods depends on the Service's type. Currently there are three types:
+
+* ClusterIP (internal) -- the default type means that this Service is only visible inside of the cluster,
+* NodePort gives each node in the cluster an externally accessible IP and
+* LoadBalancer adds a load balancer from the cloud provider which forwards traffic from the service to Nodes within it.
+
+Now you'll learn how to:
+
+* Create a service
+* Use label selectors to expose a limited set of Pods externally
+
+# Task 7. Creating a service
+
+Before you can create our services, first create a secure pod that can handle https traffic.
+
+1. If you've changed directories, make sure you return to the ~/orchestrate-with-kubernetes/kubernetes directory:
+
+    ```bash
+    cd ~/orchestrate-with-kubernetes/kubernetes
+    ```
+
+2. Explore the monolith service configuration file:
+
+    ```bash
+    cat pods/secure-monolith.yaml
+    ```
+
+3. Create the secure-monolith pods and their configuration data:
+
+    ```bash
+    kubectl create secret generic tls-certs --from-file tls/
+    kubectl create configmap nginx-proxy-conf --from-file nginx/proxy.conf
+    kubectl create -f pods/secure-monolith.yaml
+    ```
+
+    Now that you have a secure pod, it's time to expose the secure-monolith Pod externally.To do that, create a Kubernetes service.
+
+4. Explore the monolith service configuration file:
+
+    ```bash
+    cat services/monolith.yaml
+    Copied!
+    (Output):
+
+    kind: Service
+    apiVersion: v1
+    metadata:
+    name: "monolith"
+    spec:
+    selector:
+        app: "monolith"
+        secure: "enabled"
+    ports:
+        - protocol: "TCP"
+        port: 443
+        targetPort: 443
+        nodePort: 31000
+    type: NodePort
+    ```
+
+    **Things to note**:
+
+    * There's a selector which is used to automatically find and expose any pods with the labels `app: monolith` and `secure: enabled`.
+
+    * Now you have to expose the nodeport here because this is how you'll forward external traffic from port 31000 to nginx (on port 443).
+
+5. Use the kubectl create command to create the monolith service from the monolith service configuration file:
+
+    ```bash
+    kubectl create -f services/monolith.yaml
+    ```
+
+    (Output):
+
+    ```bash
+    service/monolith created
+    ```
+
+    You're using a port to expose the service. This means that it's possible to have port collisions if another app tries to bind to port 31000 on one of your servers.
+
+    Normally, Kubernetes would handle this port assignment. In this lab you chose a port so that it's easier to configure health checks later on.
+
+6. Use the gcloud compute firewall-rules command to allow traffic to the monolith service on the exposed nodeport:
+
+    ```bash
+    gcloud compute firewall-rules create allow-monolith-nodeport \
+    ```
+
+    Now that everything is set up you should be able to hit the secure-monolith service from outside the cluster without using port forwarding.
+
+7. First, get an external IP address for one of the nodes.
+
+    ```bash
+    gcloud compute instances list
+    ```
+
+    Now try hitting the secure-monolith service using curl:
+
+    ```bash
+    curl -k https://<EXTERNAL_IP>:31000
+    ```
+
+    Uh oh! That timed out. What's going wrong?
+
+    **Note**: It's time for a quick knowledge check.
+
+    Use the following commands to answer the questions below:
+    * `kubectl get services monolith`
+    * `kubectl describe services monolith`
+
+    Questions:
+
+    * Why are you unable to get a response from the monolith service?
+    * How many endpoints does the monolith service have?
+    * What labels must a Pod have to be picked up by the monolith service?
+
+    Hint: it has to do with labels. You'll fix the issue in the next section.
+
+# Task 8. Adding labels to pods
+
+Currently the monolith service does not have endpoints. One way to troubleshoot an issue like this is to use the kubectl get pods command with a label query.
+
+1. You can see that you have quite a few pods running with the monolith label.
+
+    ```bash
+    kubectl get pods -l "app=monolith"
+    ```
+
+2. But what about "app=monolith" and "secure=enabled"?
+
+    ```bash
+    kubectl get pods -l "app=monolith,secure=enabled"
+    ```
+
+    Notice this label query does not print any results. It seems like you need to add the "secure=enabled" label to them.
+
+3. Use the kubectl label command to add the missing secure=enabled label to the secure-monolith Pod. Afterwards, you can check and see that your labels have been updated.
+
+    ```bash
+    kubectl label pods secure-monolith 'secure=enabled'
+    kubectl get pods secure-monolith --show-labels
+    ```
+
+4. Now that your pods are correctly labeled, view the list of endpoints on the monolith service:
+
+    ```bash
+    kubectl describe services monolith | grep Endpoints
+    ```
+
+    And you have one!
+
+5. Test this out by hitting one of our nodes again.
+
+    ```bash
+    gcloud compute instances list
+    curl -k https://<EXTERNAL_IP>:31000
+    ```
+
+    Bam! Houston, we have contact.
+
+# Task 9. Deploying applications with Kubernetes
+
+The goal of this lab is to get you ready for scaling and managing containers in production. That's where Deployments come in. Deployments are a declarative way to ensure that the number of Pods running is equal to the desired number of Pods, specified by the user.
+
+![Deployments](./deployments.png "Deployments")
+
+The main benefit of Deployments is in abstracting away the low level details of managing Pods. Behind the scenes Deployments use Replica Sets to manage starting and stopping the Pods. If Pods need to be updated or scaled, the Deployment will handle that. Deployment also handles restarting Pods if they happen to go down for some reason.
+
+Look at a quick example:
+![Deployments_2](./deployments_2.png "Deployments_2")
+
+Pods are tied to the lifetime of the Node they are created on. In the example above, Node3 went down (taking a Pod with it). Instead of manually creating a new Pod and finding a Node for it, your Deployment created a new Pod and started it on Node2.
+
+That's pretty cool!
+
+It's time to combine everything you learned about Pods and Services to break up the monolith application into smaller Services using Deployments.
+
+# Task 10. Creating deployments
+
+You're going to break the monolith app into three separate pieces:
+
+* auth - Generates JWT tokens for authenticated users.
+* hello - Greet authenticated users.
+* frontend - Routes traffic to the auth and hello services.
+
+You are ready to create deployments, one for each service. Afterwards, you'll define internal services for the auth and hello deployments and an external service for the frontend deployment. Once finished you'll be able to interact with the microservices just like with Monolith only now each piece will be able to be scaled and deployed, independently!
+
+1. Get started by examining the auth deployment configuration file.
+
+    ```bash
+    cat deployments/auth.yaml
+    ```
+
+    (Output)
+
+    ```bash
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+    name: auth
+    spec:
+    selector:
+        matchlabels:
+        app: auth
+    replicas: 1
+    template:
+        metadata:
+        labels:
+            app: auth
+            track: stable
+        spec:
+        containers:
+            - name: auth
+            image: "kelseyhightower/auth:2.0.0"
+            ports:
+                - name: http
+                containerPort: 80
+                - name: health
+                containerPort: 81
+    ...
+    ```
+
+The deployment is creating 1 replica, and you're using version 2.0.0 of the auth container.
+
+When you run the kubectl create command to create the auth deployment it will make one pod that conforms to the data in the Deployment manifest. This means you can scale the number of Pods by changing the number specified in the Replicas field.
+
+2. Anyway, go ahead and create your deployment object:
+
+    ```bash
+    kubectl create -f deployments/auth.yaml
+    ```
+
+3. It's time to create a service for your auth deployment. Use the kubectl create command to create the auth service:
+
+    ```bash
+    kubectl create -f services/auth.yaml
+    ```
+
+4. Now do the same thing to create and expose the hello deployment:
+
+    ```bash
+    kubectl create -f deployments/hello.yaml
+    kubectl create -f services/hello.yaml
+    ```
+
+5. And one more time to create and expose the frontend Deployment.
+
+    ```bash
+    kubectl create configmap nginx-frontend-conf --from-file=nginx/frontend.conf
+    kubectl create -f deployments/frontend.yaml
+    kubectl create -f services/frontend.yaml
+    ```
+
+    **Note**: There is one more step to creating the frontend because you need to store some configuration data with the container.
+6. Interact with the frontend by grabbing its External IP and then curling to it:
+
+    ```bash
+    kubectl get services frontend
+    ```
+
+    **Note**: It might take a minute for the external IP address to be generated. Run the above command again if the EXTERNAL-IP column status is pending.
+
+    ```bash
+    curl -k https://<EXTERNAL-IP>
+    ```
+
+    And you get a hello response back!
+
+# Congratulations
+
+You've developed a multi-service application using Kubernetes. The skills you've learned here will allow you to deploy complex applications on Kubernetes using a collection of deployments and services.
