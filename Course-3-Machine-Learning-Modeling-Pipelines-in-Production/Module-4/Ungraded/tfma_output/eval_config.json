@@ -1,0 +1,39 @@
+{
+  "evalConfig": {
+    "modelSpecs": [
+      {
+        "labelKey": "Smiling"
+      }
+    ],
+    "slicingSpecs": [
+      {},
+      {
+        "featureKeys": [
+          "Young"
+        ]
+      }
+    ],
+    "metricsSpecs": [
+      {
+        "metrics": [
+          {
+            "className": "FairnessIndicators",
+            "config": "{ \"thresholds\": [0.22, 0.5, 0.75] }"
+          },
+          {
+            "className": "ExampleCount"
+          }
+        ],
+        "modelNames": [
+          ""
+        ]
+      }
+    ]
+  },
+  "version": "0.43.0",
+  "dataLocation": "celeb_a_test.tfrecord",
+  "fileFormat": "tfrecords",
+  "modelLocations": {
+    "": "saved_model"
+  }
+}

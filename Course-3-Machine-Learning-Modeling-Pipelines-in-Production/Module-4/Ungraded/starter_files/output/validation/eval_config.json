@@ -1,0 +1,62 @@
+{
+  "evalConfig": {
+    "modelSpecs": [
+      {
+        "name": "candidate",
+        "signatureName": "serving_default",
+        "labelKey": "label"
+      },
+      {
+        "name": "baseline",
+        "signatureName": "serving_default",
+        "labelKey": "label",
+        "isBaseline": true
+      }
+    ],
+    "slicingSpecs": [
+      {},
+      {
+        "featureKeys": [
+          "sex"
+        ]
+      },
+      {
+        "featureKeys": [
+          "race"
+        ]
+      }
+    ],
+    "metricsSpecs": [
+      {
+        "metrics": [
+          {
+            "className": "ExampleCount"
+          },
+          {
+            "className": "BinaryAccuracy",
+            "threshold": {
+              "valueThreshold": {
+                "lowerBound": 0.9
+              },
+              "changeThreshold": {
+                "absolute": -1e-10,
+                "direction": "HIGHER_IS_BETTER"
+              }
+            }
+          }
+        ],
+        "modelNames": [
+          "candidate",
+          "baseline"
+        ]
+      }
+    ]
+  },
+  "version": "0.43.0",
+  "dataLocation": "starter_files/data/tfrecord/data_test.tfrecord",
+  "fileFormat": "tfrecords",
+  "modelLocations": {
+    "baseline": "starter_files/models/model2",
+    "candidate": "starter_files/models/model1"
+  }
+}
